@@ -2,7 +2,6 @@
 # Usage: pyinstaller build/mac.spec
 
 import os
-import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(SPECPATH).parent
@@ -11,19 +10,9 @@ block_cipher = None
 
 added_files = [
     (str(PROJECT_ROOT / 'watermark_app' / 'gui'), 'watermark_app/gui'),
+    (str(PROJECT_ROOT / 'build' / 'videoseal_data' / 'cards'), 'videoseal/cards'),
+    (str(PROJECT_ROOT / 'build' / 'videoseal_data' / 'configs'), 'videoseal/configs'),
 ]
-
-try:
-    import videoseal
-    VIDEOSEAL_DIR = Path(videoseal.__file__).parent
-    SITE_PACKAGES = VIDEOSEAL_DIR.parent
-    added_files.append((str(VIDEOSEAL_DIR / 'cards'), 'videoseal/cards'))
-    added_files.append((str(VIDEOSEAL_DIR / 'configs'), 'videoseal/configs'))
-    ckpts_dir = SITE_PACKAGES / 'ckpts'
-    if ckpts_dir.exists():
-        added_files.append((str(ckpts_dir), 'ckpts'))
-except ImportError:
-    pass
 
 a = Analysis(
     [str(PROJECT_ROOT / 'watermark_app' / 'server.py')],

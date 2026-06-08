@@ -20,7 +20,9 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install torch torchvision
-          pip install videoseal fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
+          pip install videoseal --no-deps
+          pip install PyWavelets av calflops omegaconf imageio imageio-ffmpeg
+          pip install fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
           pip install pyinstaller
 
       - name: Create .env defaults

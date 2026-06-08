@@ -6,13 +6,6 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(SPECPATH).parent
-VIDEOSEAL_DIR = None
-for p in sys.path + ['/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages']:
-    vp = Path(p) / 'videoseal'
-    if vp.exists():
-        VIDEOSEAL_DIR = vp
-        SITE_PACKAGES = vp.parent
-        break
 
 block_cipher = None
 
@@ -20,12 +13,17 @@ added_files = [
     (str(PROJECT_ROOT / 'watermark_app' / 'gui'), 'watermark_app/gui'),
 ]
 
-if VIDEOSEAL_DIR:
+try:
+    import videoseal
+    VIDEOSEAL_DIR = Path(videoseal.__file__).parent
+    SITE_PACKAGES = VIDEOSEAL_DIR.parent
     added_files.append((str(VIDEOSEAL_DIR / 'cards'), 'videoseal/cards'))
     added_files.append((str(VIDEOSEAL_DIR / 'configs'), 'videoseal/configs'))
     ckpts_dir = SITE_PACKAGES / 'ckpts'
     if ckpts_dir.exists():
         added_files.append((str(ckpts_dir), 'ckpts'))
+except ImportError:
+    pass
 
 a = Analysis(
     [str(PROJECT_ROOT / 'watermark_app' / 'server.py')],

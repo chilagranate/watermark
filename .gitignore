@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/pyinstaller/
+*.spec.lock
+
+# Virtualenv
+venv/
+venv_310/
+.venv/
+
+# Data
+data/
+watermarked/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Test outputs and media
+tests/
+!tests/test_watermark.py
+
+# Model checkpoint (downloaded at runtime)
+ckpts/
+
+# Backup
+*.bak

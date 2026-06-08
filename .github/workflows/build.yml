@@ -1,0 +1,82 @@
+name: Build Watermark App
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install videoseal fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
+          pip install pyinstaller
+
+      - name: Create .env defaults
+        run: |
+          echo "WATERMARK_SERVER_URL=http://127.0.0.1:8765" > .env
+          echo "WATERMARK_API_KEY=" >> .env
+          echo "WATERMARK_VS_SCALING_W=0.3" >> .env
+          echo "WATERMARK_VIDEO_FRAME_STEP=30" >> .env
+
+      - name: Build macOS .app
+        run: |
+          pyinstaller build/mac.spec --distpath dist --workpath build/pyinstaller --clean --noconfirm
+
+      - name: Create DMG
+        run: |
+          mkdir -p dist/dmg
+          cp -r dist/Watermark.app dist/dmg/
+          hdiutil create -volname Watermark -srcfolder dist/dmg -ov -format UDZO dist/Watermark.dmg
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Watermark-macOS
+          path: dist/Watermark.dmg
+          retention-days: 30
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install videoseal fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
+          pip install pyinstaller
+
+      - name: Create .env defaults
+        run: |
+          echo WATERMARK_SERVER_URL=http://127.0.0.1:8765 > .env
+          echo WATERMARK_API_KEY= >> .env
+          echo WATERMARK_VS_SCALING_W=0.3 >> .env
+          echo WATERMARK_VIDEO_FRAME_STEP=30 >> .env
+
+      - name: Build Windows .exe
+        run: |
+          pyinstaller build/win.spec --distpath dist --workpath build/pyinstaller --clean --noconfirm
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Watermark-Windows
+          path: dist/Watermark.exe
+          retention-days: 30

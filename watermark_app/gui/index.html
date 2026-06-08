@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Watermark">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" href="/static/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>Watermark App</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>Watermark <span id="version-tag"></span></h1>
+    <div id="update-banner" class="update-banner" hidden>
+      <span id="update-text"></span>
+      <a id="update-link" href="#" target="_blank">Descargar</a>
+      <button id="update-dismiss" class="update-dismiss">&#10005;</button>
+    </div>
+    <nav id="tabs">
+      <button class="tab active" data-tab="mark">Marcar</button>
+      <button class="tab" data-tab="read">Leer</button>
+      <button class="tab" data-tab="history">Historial</button>
+      <button class="tab" data-tab="config">Config</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TAB MARCAR -->
+    <section id="tab-mark" class="tab-content active">
+      <div class="card">
+        <div class="fields-row">
+          <div class="field">
+            <label>
+              ID único
+              <span class="info-icon" data-tip="Identificador personalizado para esta tanda de archivos. Si lo dejás vacío se genera uno automático. Este ID se usa luego para buscar y saber a qué lote pertenece cada imagen. Podés poner por ejemplo 'playa_2026' o 'lote_venta_marzo'.">?</span>
+            </label>
+            <input type="text" id="mark-id" placeholder="Se genera automático">
+          </div>
+          <div class="field">
+            <label>
+              Vendido a
+              <span class="info-icon" data-tip="Si este contenido se lo entregaste a una persona específica, escribí su nombre acá. Queda registrado en la base de datos y si esa imagen se filtra, vas a poder identificar exactamente a quién pertenecía. Si es contenido público o para feed, dejalo vacío.">?</span>
+            </label>
+            <input type="text" id="mark-vendido" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="fields-row fields-3">
+          <div class="field">
+            <label>
+              Fuerza de marca
+              <span class="info-icon" data-tip="A mayor fuerza, la marca es más fácil de detectar tras compresión (JPEG, WhatsApp), pero puede volverse ligeramente visible. 0.2 = invisible, 0.6 = equilibrado, 1.0+ = máxima robustez.">?</span>
+              : <span id="force-label">0.6</span>
+            </label>
+            <input type="range" id="mark-force" min="0.2" max="1.2" value="0.6" step="0.1">
+            <div class="range-labels"><span>0.2 Invisible</span><span>1.2 Robusto</span></div>
+          </div>
+          <div class="field">
+            <label>
+              Video: marcar cada
+              <span class="info-icon" data-tip="Define cada cuántos frames del video se incrusta la marca. Con 'cada 1' se marcan todos los frames (más robusto pero más lento). Con 'cada 30' se marca 1 frame por segundo (más rápido). El resto de frames pasan sin modificar.">?</span>
+              <span id="step-label">30</span> frames
+            </label>
+            <input type="range" id="mark-vstep" min="1" max="60" value="30" step="1">
+          </div>
+          <div class="field">
+            <label>Carpeta de salida</label>
+            <div class="input-with-btn">
+              <input type="text" id="mark-output" placeholder="Por defecto: ./watermarked">
+              <button class="btn btn-icon" id="btn-pick-output" title="Elegir carpeta">📁</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card drop-zone" id="drop-zone">
+        <p>Arrastrá archivos o carpetas acá</p>
+        <p class="sub">o hacé clic para seleccionar</p>
+        <input type="file" id="file-input" multiple hidden accept="image/*,video/*">
+      </div>
+
+      <div id="file-list" class="file-list"></div>
+
+      <div class="progress-container" id="progress-container" hidden>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-text">
+          <span id="progress-pct">0%</span>
+          <span id="progress-eta"></span>
+          <span id="progress-file"></span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-clear" class="btn btn-secondary">Limpiar</button>
+        <button id="btn-mark" class="btn btn-primary">Marcar todo</button>
+      </div>
+    </section>
+
+    <!-- TAB LEER -->
+    <section id="tab-read" class="tab-content">
+      <div class="card drop-zone" id="read-drop-zone">
+        <p>Arrastrá una imagen o video para identificar</p>
+        <p class="sub">o hacé clic para seleccionar</p>
+        <input type="file" id="read-file-input" hidden accept="image/*,video/*">
+      </div>
+      <div id="read-result" class="card" hidden>
+        <div id="read-details"></div>
+      </div>
+    </section>
+
+    <!-- TAB HISTORIAL -->
+    <section id="tab-history" class="tab-content">
+      <div class="card">
+        <div class="fields-row">
+          <div class="field">
+            <input type="text" id="history-search" placeholder="Buscar por ID o nombre...">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+        <table id="history-table">
+          <thead><tr><th>ID</th><th>Tipo</th><th>Vendido a</th><th>Fecha</th><th>Sync</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary" id="btn-export-csv">CSV</button>
+        <button class="btn btn-secondary" id="btn-export-json">JSON</button>
+      </div>
+    </section>
+
+    <!-- TAB CONFIG -->
+    <section id="tab-config" class="tab-content">
+      <div class="card">
+        <div class="field">
+          <label>
+            Video step
+            <span class="info-icon" data-tip="Cantidad de frames entre marcas en video. Con 1 se marca cada frame (máxima calidad, más lento). Con 30 se marca ~1 frame por segundo (rápido).">?</span>
+            : <span id="cfg-vstep-val">30</span> frames
+          </label>
+          <input type="range" id="cfg-vstep" min="1" max="60" value="30" step="1">
+        </div>
+        <div class="field">
+          <label>URL servidor monitor</label>
+          <input type="text" id="cfg-server" placeholder="http://127.0.0.1:8765">
+        </div>
+          <div class="field">
+            <label>API Key</label>
+            <input type="password" id="cfg-apikey" placeholder="API key del monitor">
+          </div>
+          <div class="field">
+            <label>Carpeta de salida</label>
+            <div class="input-with-btn">
+              <input type="text" id="cfg-output" placeholder="C:\eve-firmainvisible\watermarked">
+              <button class="btn btn-icon" id="btn-pick-cfg-output" title="Elegir carpeta">📁</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-save-config">Guardar</button>
+          <div style="margin-top:12px">
+            <button class="btn btn-secondary" id="btn-sync">Sincronizar con servidor</button>
+            <span id="sync-result" style="margin-left:8px;font-size:.8rem;color:var(--text2)"></span>
+          </div>
+      </div>
+      <div class="card qr-card">
+        <h3>Conectar iPhone</h3>
+        <ol>
+          <li>Asegurate de estar en la misma red WiFi que la Mac/PC</li>
+          <li>Escaneá el código QR con la cámara del iPhone</li>
+          <li>Tocá "Agregar a pantalla de inicio"</li>
+        </ol>
+        <img id="qr-img" src="/api/qr" alt="QR">
+        <p class="qr-url" id="qr-url"></p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toasts"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

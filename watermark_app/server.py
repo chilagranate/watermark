@@ -27,6 +27,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app = FastAPI(title="Watermark App")
 active_ws: list[WebSocket] = []
 _current_config: Config | None = None
+_uvicorn_server = None
 
 
 def _get_config():
@@ -429,12 +430,20 @@ async def get_version():
     return {"version": __version__}
 
 
+@app.post("/api/shutdown")
+async def shutdown():
+    global _uvicorn_server
+    if _uvicorn_server:
+        _uvicorn_server.should_exit = True
+    return {"status": "shutting_down"}
+
+
 @app.get("/api/check-update")
 async def check_update():
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get(
-                "https://api.github.com/repos/chilagranate/watermark-app/releases/latest",
+                "https://api.github.com/repos/chilagranate/watermark/releases/latest",
                 headers={"Accept": "application/vnd.github+json"},
             )
             if r.status_code == 200:
@@ -474,7 +483,7 @@ async def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get(
-                "https://api.github.com/repos/chilagranate/watermark-app/releases/latest",
+                "https://api.github.com/repos/chilagranate/watermark/releases/latest",
                 headers={"Accept": "application/vnd.github+json"},
             )
             if r.status_code == 200:
@@ -487,4 +496,7 @@ async def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
     print()
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
+    global _uvicorn_server
+    _uvicorn_server = server
     await server.serve()
+    _uvicorn_server = None

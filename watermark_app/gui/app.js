@@ -558,6 +558,15 @@ document.getElementById('btn-sync').addEventListener('click', async () => {
   btn.textContent = 'Sincronizar con servidor';
 });
 
+// Shutdown button
+document.getElementById('btn-shutdown').addEventListener('click', async () => {
+  if (!confirm('Cerrar la aplicacion?')) return;
+  try {
+    await fetch('/api/shutdown', { method: 'POST' });
+  } catch(e) {}
+  document.body.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)">Aplicacion cerrada. Ya podes cerrar esta ventana.</div>';
+});
+
 // --- TOAST ---
 function toast(msg, type) {
   const div = document.createElement('div');

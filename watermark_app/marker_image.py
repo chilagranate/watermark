@@ -1,5 +1,6 @@
 import os
 import secrets
+import sys
 
 import cv2
 import numpy as np
@@ -39,10 +40,14 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
         with _modelo_lock:
             if base_key not in _modelo_cache:
                 import videoseal
-                pkg_dir = os.path.dirname(videoseal.__file__)
-                site_packages = os.path.dirname(pkg_dir)
                 cwd = os.getcwd()
-                os.chdir(site_packages)
+                if getattr(sys, 'frozen', False):
+                    meipass = sys._MEIPASS
+                    os.chdir(meipass)
+                else:
+                    pkg_dir = os.path.dirname(videoseal.__file__)
+                    site_packages = os.path.dirname(pkg_dir)
+                    os.chdir(site_packages)
                 try:
                     model = videoseal.load(model_name)
                 finally:

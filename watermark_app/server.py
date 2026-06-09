@@ -3,6 +3,8 @@ import sys
 import tempfile
 import time
 import socket
+import asyncio
+import threading
 import webbrowser
 from datetime import datetime, timezone
 import qrcode
@@ -513,54 +515,98 @@ if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
-async def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
+def _iniciar_webview(port):
+    import webview
+
+    class WatermarkApi:
+        def __init__(self):
+            self._window = None
+        def set_window(self, win):
+            self._window = win
+        def quit(self):
+            if self._window:
+                self._window.destroy()
+
+    api = WatermarkApi()
+    window = webview.create_window(
+        f"Watermark v{__version__}",
+        f"http://localhost:{port}",
+        width=1200,
+        height=800,
+        min_size=(800, 600),
+        js_api=api,
+    )
+    api.set_window(window)
+    webview.start(debug=False)
+
+
+def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
+    ip = _get_local_ip()
+    url = f"http://{ip}:{port}"
+    print(f"\n{'='*50}")
+    print(f"  Watermark App v{__version__}")
+    print(f"  Abrí en el navegador: {url}")
+    print(f"  Para salir: cerrá esta ventana o Ctrl+C")
+    print(f"{'='*50}\n")
+
+    from watermark_app.marker_image import _cargar_modelo
+    cfg = _get_config()
+    print("  Cargando modelo VideoSeal...")
+    _cargar_modelo(cfg.vs_model, cfg.vs_scaling_w)
+    print("  Modelo cargado. Servidor iniciado.\n")
+
     try:
-        ip = _get_local_ip()
-        url = f"http://{ip}:{port}"
-        print(f"\n{'='*50}")
-        print(f"  Watermark App v{__version__}")
-        print(f"  Abrí en el navegador: {url}")
-        print(f"  Para salir: cerrá esta ventana o Ctrl+C")
-        print(f"{'='*50}\n")
+        import webview
+        use_webview = True
+    except ImportError:
+        use_webview = False
+        print("  pywebview no instalado, usando navegador\n")
 
-        from watermark_app.marker_image import _cargar_modelo
-        cfg = _get_config()
-        print("  Cargando modelo VideoSeal...")
-        _cargar_modelo(cfg.vs_model, cfg.vs_scaling_w)
-        print("  Modelo cargado. Servidor iniciado.\n")
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
+    server = uvicorn.Server(config)
+    global _uvicorn_server
+    _uvicorn_server = server
 
-        webbrowser.open(f"http://localhost:{port}")
+    if use_webview:
+        def run_server():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(server.serve())
 
+        thread = threading.Thread(target=run_server, daemon=False)
+        thread.start()
+        time.sleep(1.5)
+
+        _iniciar_webview(port)
+
+        server.should_exit = True
+        thread.join(timeout=3)
+    else:
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                r = await client.get(
-                    "https://api.github.com/repos/chilagranate/watermark/releases/latest",
-                    headers={"Accept": "application/vnd.github+json"},
-                )
-                if r.status_code == 200:
-                    latest = r.json().get("tag_name", "").lstrip("v")
-                    if latest and latest != __version__:
-                        print(f"  [UPDATE] v{latest} disponible en GitHub Releases\n")
+            r = httpx.get(
+                "https://api.github.com/repos/chilagranate/watermark/releases/latest",
+                headers={"Accept": "application/vnd.github+json"}, timeout=5.0,
+            )
+            if r.status_code == 200:
+                latest = r.json().get("tag_name", "").lstrip("v")
+                if latest and latest != __version__:
+                    print(f"  [UPDATE] v{latest} disponible en GitHub Releases\n")
         except Exception:
             pass
 
-        print()
-        config = uvicorn.Config(app, host=host, port=port, log_level="warning")
-        server = uvicorn.Server(config)
-        global _uvicorn_server
-        _uvicorn_server = server
-        await server.serve()
-        _uvicorn_server = None
-    except Exception as e:
-        import traceback
-        log_path = os.path.join(os.path.expanduser("~"), "watermark_error.log")
-        with open(log_path, "w") as f:
-            f.write(f"Error starting Watermark App:\n{traceback.format_exc()}\n")
-        print(f"\nERROR: {e}")
-        print(f"Details written to: {log_path}")
-        traceback.print_exc()
+        webbrowser.open(f"http://localhost:{port}")
+        asyncio.run(server.serve())
+
+    _uvicorn_server = None
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(iniciar_servidor())
+    try:
+        iniciar_servidor()
+    except Exception:
+        import traceback as tb
+        log_path = os.path.join(os.path.expanduser("~"), "watermark_error.log")
+        with open(log_path, "w") as f:
+            f.write(f"Error starting Watermark App:\n{tb.format_exc()}\n")
+        print(f"\nFATAL ERROR. Log: {log_path}")
+        tb.print_exc()

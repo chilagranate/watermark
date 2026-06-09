@@ -68,6 +68,8 @@ a = Analysis(
         'websockets',
         'dtcwt',
         'pywt',
+        'pywebview',
+        'webview',
         'requests',
         'urllib3',
         'charset_normalizer',

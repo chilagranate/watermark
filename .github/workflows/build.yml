@@ -24,6 +24,7 @@ jobs:
           pip install videoseal --no-deps
           pip install PyWavelets av calflops omegaconf imageio imageio-ffmpeg
           pip install fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
+          pip install pywebview
           pip install pyinstaller
 
       - name: Create .env defaults
@@ -64,6 +65,7 @@ jobs:
           pip install --upgrade pip setuptools
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install videoseal fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
+          pip install pywebview
           pip install pyinstaller
 
       - name: Create .env defaults

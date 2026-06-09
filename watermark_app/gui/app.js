@@ -546,7 +546,11 @@ document.getElementById('btn-shutdown').addEventListener('click', async () => {
   try {
     await fetch('/api/shutdown', { method: 'POST' });
   } catch(e) {}
-  document.body.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)">Aplicacion cerrada. Ya podes cerrar esta ventana.</div>';
+  if (window.pywebview && window.pywebview.api) {
+    setTimeout(() => window.pywebview.api.quit(), 300);
+  } else {
+    document.body.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)">Aplicacion cerrada. Ya podes cerrar esta ventana.</div>';
+  }
 });
 
 // --- TOAST ---

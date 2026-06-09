@@ -1,11 +1,11 @@
 import os
+import sys
 import tempfile
 import time
 import socket
 import webbrowser
 import qrcode
 import httpx
-import requests  # force PyInstaller to bundle this
 from io import BytesIO
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
@@ -21,9 +21,13 @@ from watermark_app.payload import generar_id_unico
 from watermark_app.sync import SyncClient
 from watermark_app.version import __version__
 
-GUI_DIR = os.path.join(os.path.dirname(__file__), "gui")
+if getattr(sys, 'frozen', False):
+    GUI_DIR = os.path.join(sys._MEIPASS, 'watermark_app', 'gui')
+    PROJECT_ROOT = os.path.dirname(sys._MEIPASS)
+else:
+    GUI_DIR = os.path.join(os.path.dirname(__file__), "gui")
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = GUI_DIR
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app = FastAPI(title="Watermark App")
 active_ws: list[WebSocket] = []
@@ -470,15 +474,17 @@ async def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
     try:
         ip = _get_local_ip()
         url = f"http://{ip}:{port}"
-        print(f"\n  Watermark App v{__version__}")
-        print(f"  GUI: {url}")
-        print(f"  QR para iPhone: {url}/api/qr")
+        print(f"\n{'='*50}")
+        print(f"  Watermark App v{__version__}")
+        print(f"  Abrí en el navegador: {url}")
+        print(f"  Para salir: cerrá esta ventana o Ctrl+C")
+        print(f"{'='*50}\n")
 
         from watermark_app.marker_image import _cargar_modelo
         cfg = _get_config()
         print("  Cargando modelo VideoSeal...")
         _cargar_modelo(cfg.vs_model, cfg.vs_scaling_w)
-        print("  Modelo cargado.")
+        print("  Modelo cargado. Servidor iniciado.\n")
 
         webbrowser.open(f"http://localhost:{port}")
 

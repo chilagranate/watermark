@@ -19,12 +19,11 @@ let markStartTime = 0;
         `v${data.latest} disponible (tenés v${data.current})`;
       document.getElementById('update-link').href = data.url;
       banner.hidden = false;
+      document.getElementById('update-dismiss').onclick = () => {
+        banner.hidden = true;
+      };
     }
   } catch(e) {}
-
-  document.getElementById('update-dismiss').addEventListener('click', () => {
-    document.getElementById('update-banner').hidden = true;
-  });
 })();
 
 // Load initial config

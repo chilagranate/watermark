@@ -509,7 +509,6 @@ async def iniciar_servidor(host: str = "0.0.0.0", port: int = 8765):
         print(f"\nERROR: {e}")
         print(f"Details written to: {log_path}")
         traceback.print_exc()
-        input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

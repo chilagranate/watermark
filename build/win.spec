@@ -68,6 +68,7 @@ a = Analysis(
         'websockets',
         'dtcwt',
         'pywt',
+        'requests',
     ],
     hookspath=[],
     hooksconfig={},

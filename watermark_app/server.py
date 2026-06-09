@@ -5,6 +5,7 @@ import socket
 import webbrowser
 import qrcode
 import httpx
+import requests  # force PyInstaller to bundle this
 from io import BytesIO
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect

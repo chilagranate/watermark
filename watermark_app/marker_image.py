@@ -1,6 +1,7 @@
 import os
 import secrets
 import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -49,7 +50,28 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
                     site_packages = os.path.dirname(pkg_dir)
                     os.chdir(site_packages)
                 try:
-                    model = videoseal.load(model_name)
+                    from videoseal.utils.cfg import setup_model
+                    from omegaconf import OmegaConf
+                    import yaml
+                    cards_dir = Path("videoseal/cards")
+                    card_path = cards_dir / f"{model_name}_1.0.yaml" if model_name == "videoseal" and not (cards_dir / f"{model_name}.yaml").exists() else cards_dir / f"{model_name}.yaml"
+                    if not card_path.exists():
+                        avail = [c.stem for c in cards_dir.glob("*.yaml")]
+                        card_path = cards_dir / f"{avail[0]}.yaml"
+                    cfg = OmegaConf.load(card_path)
+                    cfg.args.attenuation = "none"
+                    ckpt_path = Path(cfg.checkpoint_path)
+                    if not ckpt_path.is_file():
+                        import urllib.request
+                        ckpts_dir = Path("ckpts")
+                        ckpts_dir.mkdir(exist_ok=True)
+                        fname = os.path.basename(str(cfg.checkpoint_path).split("/")[-1])
+                        ckpt_path = ckpts_dir / fname
+                        if not ckpt_path.exists():
+                            url = str(cfg.checkpoint_path)
+                            urllib.request.urlretrieve(url, str(ckpt_path))
+                            print(f"File {url} downloaded successfully to {ckpt_path}")
+                    model = setup_model(cfg, str(ckpt_path))
                 finally:
                     os.chdir(cwd)
                 _modelo_cache[base_key] = model

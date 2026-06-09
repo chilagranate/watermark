@@ -12,7 +12,15 @@ added_files = [
     (str(PROJECT_ROOT / 'watermark_app' / 'gui'), 'watermark_app/gui'),
     (str(PROJECT_ROOT / 'build' / 'videoseal_data' / 'cards'), 'videoseal/cards'),
     (str(PROJECT_ROOT / 'build' / 'videoseal_data' / 'configs'), 'videoseal/configs'),
+    (str(PROJECT_ROOT / 'build' / 'videoseal_data' / 'configs' / 'attenuation.yaml'), 'configs/attenuation.yaml'),
 ]
+
+try:
+    import decord
+    DECORD_DIR = Path(decord.__file__).parent
+    added_files.append((str(DECORD_DIR), 'decord'))
+except ImportError:
+    pass
 
 a = Analysis(
     [str(PROJECT_ROOT / 'watermark_app' / 'server.py')],

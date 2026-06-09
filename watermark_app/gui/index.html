@@ -70,13 +70,6 @@
             </label>
             <input type="range" id="mark-vstep" min="1" max="60" value="30" step="1">
           </div>
-          <div class="field">
-            <label>Carpeta de salida</label>
-            <div class="input-with-btn">
-              <input type="text" id="mark-output" placeholder="Por defecto: ./watermarked">
-              <button class="btn btn-icon" id="btn-pick-output" title="Elegir carpeta">📁</button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -95,6 +88,11 @@
           <span id="progress-eta"></span>
           <span id="progress-file"></span>
         </div>
+      </div>
+
+      <div id="mark-done" class="card" hidden>
+        <p id="mark-done-text"></p>
+        <a id="mark-open-folder" href="#" class="open-folder-link">📁 Abrir carpeta de salida</a>
       </div>
 
       <div class="actions">
@@ -159,10 +157,7 @@
           </div>
           <div class="field">
             <label>Carpeta de salida</label>
-            <div class="input-with-btn">
-              <input type="text" id="cfg-output" placeholder="C:\eve-firmainvisible\watermarked">
-              <button class="btn btn-icon" id="btn-pick-cfg-output" title="Elegir carpeta">📁</button>
-            </div>
+            <input type="text" id="cfg-output" placeholder="Se guarda en Documentos/Watermark">
           </div>
           <button class="btn btn-primary" id="btn-save-config">Guardar</button>
           <div style="margin-top:12px">

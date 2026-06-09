@@ -1,6 +1,7 @@
 (function() {
 let selectedFiles = [];
 let markStartTime = 0;
+let lastOutputDir = '';
 
 // Version and updates
 (async function() {
@@ -31,7 +32,6 @@ let markStartTime = 0;
   try {
     const resp = await fetch('/api/config');
     const cfg = await resp.json();
-    document.getElementById('mark-output').value = cfg.output_dir || '';
     if (cfg.scaling_w) {
       const fs = document.getElementById('mark-force');
       const fl = document.getElementById('force-label');
@@ -47,37 +47,6 @@ let markStartTime = 0;
   } catch(e) {}
 })();
 
-// Folder picker buttons
-function setupFolderPicker(btnId, inputId) {
-  const btn = document.getElementById(btnId);
-  const input = document.getElementById(inputId);
-  if (!btn || !input) return;
-  btn.addEventListener('click', () => {
-    const picker = document.createElement('input');
-    picker.type = 'file';
-    picker.webkitdirectory = true;
-    picker.directory = true;
-    picker.addEventListener('change', () => {
-      if (picker.files.length) {
-        const path = picker.files[0].webkitRelativePath || picker.files[0].name;
-        const dir = path.includes('/') ? path.split('/')[0] : '';
-        if (dir) {
-          const current = input.value.trim();
-          if (current && !current.endsWith('\\') && !current.endsWith('/')) {
-            input.value = current.replace(/[^\\\/]+$/, '') + dir;
-          } else if (current) {
-            input.value = current + dir;
-          } else {
-            input.value = dir;
-          }
-        }
-      }
-    });
-    picker.click();
-  });
-}
-setupFolderPicker('btn-pick-output', 'mark-output');
-setupFolderPicker('btn-pick-cfg-output', 'cfg-output');
 let removeCallbacks = new Map();
 
 // --- TABS ---
@@ -187,6 +156,7 @@ function renderFileList() {
 document.getElementById('btn-clear').addEventListener('click', () => {
   selectedFiles = [];
   renderFileList();
+  document.getElementById('mark-done').hidden = true;
 });
 
 // --- MARK ---
@@ -203,12 +173,11 @@ document.getElementById('btn-mark').addEventListener('click', async () => {
   form.append('vendido_a', document.getElementById('mark-vendido').value);
   form.append('scaling_w', parseFloat(document.getElementById('mark-force').value));
   form.append('video_step', document.getElementById('mark-vstep').value);
-  const outputDir = document.getElementById('mark-output').value.trim();
-  if (outputDir) form.append('output_dir', outputDir);
 
   const fill = document.getElementById('progress-fill');
   const container = document.getElementById('progress-container');
   container.hidden = false;
+  document.getElementById('mark-done').hidden = true;
   fill.style.width = '0%';
   document.getElementById('progress-pct').textContent = '0%';
   document.getElementById('progress-eta').textContent = '';
@@ -237,6 +206,20 @@ document.getElementById('btn-mark').addEventListener('click', async () => {
         toast(`Marcados ${data.results.length} archivos (${data.total_time}s)`, 'success');
       }
       if (data.synced > 0) toast(`${data.synced} sincronizados con el monitor`, 'success');
+      if (data.output_dir) {
+        lastOutputDir = data.output_dir;
+        document.getElementById('mark-done-text').textContent =
+          `${data.results.length} archivos marcados en ${data.total_time}s.`;
+        document.getElementById('mark-open-folder').onclick = async (e) => {
+          e.preventDefault();
+          await fetch('/api/open-folder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({path: lastOutputDir}),
+          });
+        };
+        document.getElementById('mark-done').hidden = false;
+      }
     }
     selectedFiles = [];
     renderFileList();

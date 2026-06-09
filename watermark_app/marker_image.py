@@ -1,7 +1,6 @@
 import os
 import secrets
 import sys
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -50,16 +49,7 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
                     site_packages = os.path.dirname(pkg_dir)
                     os.chdir(site_packages)
                 try:
-                    cards_dir = Path("videoseal/cards")
-                    avail = list(cards_dir.glob("*.yaml"))
-                    card = avail[0]
-                    import yaml
-                    with open(card) as f:
-                        cfg = yaml.safe_load(f)
-                    cfg['args']['attenuation'] = 'none'
-                    with open(card, 'w') as f:
-                        yaml.dump(cfg, f)
-                    model = videoseal.load(card.stem)
+                    model = videoseal.load(model_name)
                 finally:
                     os.chdir(cwd)
                 _modelo_cache[base_key] = model
@@ -91,9 +81,30 @@ def marcar_imagen(ruta_entrada: str, fingerprint: np.ndarray | None = None,
 
     model = _cargar_modelo(model_name, scaling_w)
 
-    with torch.no_grad():
-        outputs = model.embed(img_tensor, msgs=msg)
-        wm = outputs["imgs_w"]
+    try:
+        with torch.no_grad():
+            outputs = model.embed(img_tensor, msgs=msg)
+            wm = outputs["imgs_w"]
+    except Exception as e:
+        import traceback
+        details = (
+            f"\n{'='*60}\n"
+            f"ERROR marcando: {os.path.basename(ruta_entrada)}\n"
+            f"  Dimensiones: {img.width}x{img.height}\n"
+            f"  Tensor shape: {img_tensor.shape}\n"
+            f"  Fingerprint bits: {len(fingerprint)}\n"
+            f"  Fingerprint unique values: {np.unique(fingerprint)}\n"
+            f"  scaling_w: {scaling_w}\n"
+            f"  model_name: {model_name}\n"
+            f"  Error: {e}\n"
+            f"{'='*60}\n"
+        )
+        print(details)
+        traceback.print_exc()
+        with open(os.path.join(os.path.expanduser("~"), "watermark_error.log"), "a", encoding="utf-8") as f:
+            f.write(details)
+            f.write(traceback.format_exc())
+        raise
 
     if not output_dir:
         output_dir = os.path.dirname(ruta_entrada) or "."

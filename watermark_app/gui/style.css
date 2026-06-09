@@ -306,6 +306,18 @@ input[type="range"]::-moz-range-thumb {
 .btn-danger { background: #e74c3c22; color: var(--red); border: 1px solid var(--red); }
 .btn-danger:hover { background: var(--red); color: #fff; }
 
+.open-folder-link {
+  display: inline-block;
+  color: var(--accent2);
+  text-decoration: none;
+  font-size: .88rem;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.open-folder-link:hover { text-decoration: underline; }
+#mark-done p { margin-bottom: 4px; font-size: .88rem; }
+#mark-done { text-align: center; }
+
 #read-result { animation: fadeIn .3s; }
 .read-header {
   display: flex;

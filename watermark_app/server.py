@@ -4,6 +4,7 @@ import tempfile
 import time
 import socket
 import webbrowser
+from datetime import datetime, timezone
 import qrcode
 import httpx
 from io import BytesIO
@@ -21,13 +22,33 @@ from watermark_app.payload import generar_id_unico
 from watermark_app.sync import SyncClient
 from watermark_app.version import __version__
 
-if getattr(sys, 'frozen', False):
-    GUI_DIR = os.path.join(sys._MEIPASS, 'watermark_app', 'gui')
-    PROJECT_ROOT = os.path.dirname(sys._MEIPASS)
-else:
-    GUI_DIR = os.path.join(os.path.dirname(__file__), "gui")
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_DIR = GUI_DIR
+GUI_DIR = None
+STATIC_DIR = None
+PROJECT_ROOT = None
+
+
+def _to_local(iso_str):
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        local = dt.astimezone()
+        return local.strftime("%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        return iso_str[:19] if iso_str else ""
+
+
+def _init_paths():
+    global GUI_DIR, STATIC_DIR, PROJECT_ROOT
+    if getattr(sys, 'frozen', False):
+        GUI_DIR = os.path.join(sys._MEIPASS, 'watermark_app', 'gui')
+        PROJECT_ROOT = os.path.dirname(sys._MEIPASS)
+    else:
+        GUI_DIR = os.path.join(os.path.dirname(__file__), "gui")
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    STATIC_DIR = GUI_DIR
+
+_init_paths()
 
 app = FastAPI(title="Watermark App")
 active_ws: list[WebSocket] = []
@@ -43,6 +64,8 @@ def _get_config():
         load_dotenv(env_path, override=True)
         _current_config = cargar_config()
         _current_config.db_path = os.path.join(PROJECT_ROOT, _current_config.db_path)
+        if not _current_config.output_dir:
+            _current_config.output_dir = os.path.join(os.path.expanduser("~"), "Watermark")
     return _current_config
 
 
@@ -269,6 +292,7 @@ async def mark_files(
         "results": results,
         "total_time": round(total_time, 1),
         "synced": synced,
+        "output_dir": output_dir,
     }
 
 
@@ -298,7 +322,7 @@ async def read_file(file: UploadFile = File(...)):
             {
                 "id_unico": r["id_unico"],
                 "vendido_a": r.get("vendido_a") or "",
-                "fecha_marcado": r["fecha_marcado"],
+                "fecha_marcado": _to_local(r["fecha_marcado"]),
                 "tipo": r["tipo"],
                 "distancia": r["_distancia"],
                 "ruta_original": r["ruta_original"],
@@ -324,7 +348,7 @@ async def read_file(file: UploadFile = File(...)):
                                 remote_results.append({
                                     "id_unico": r.get("id_unico", ""),
                                     "vendido_a": r.get("vendido_a") or "",
-                                    "fecha_marcado": r.get("fecha_marcado", ""),
+                                    "fecha_marcado": _to_local(r.get("fecha_marcado", "")),
                                     "tipo": r.get("tipo", "imagen"),
                                     "distancia": r.get("distancia", 999),
                                     "ruta_original": "",
@@ -365,7 +389,7 @@ async def get_history(id: str = "", vendido: str = "", limit: int = 100):
                 "fingerprint": r["fingerprint"],
                 "tipo": r["tipo"],
                 "vendido_a": r.get("vendido_a") or "",
-                "fecha_marcado": r["fecha_marcado"],
+                "fecha_marcado": _to_local(r["fecha_marcado"]),
                 "sync_status": r["sync_status"],
                 "ruta_original": r["ruta_original"],
                 "ruta_marcada": r["ruta_marcada"],
@@ -428,6 +452,25 @@ async def force_sync():
     client = SyncClient(cfg.server_url, cfg.api_key, db)
     synced = await client.sync_pendientes()
     return {"synced": synced}
+
+
+@app.post("/api/open-folder")
+async def open_folder(data: dict):
+    path = data.get("path", "")
+    if not path or not os.path.isdir(path):
+        return JSONResponse({"error": "Carpeta no encontrada"}, status_code=400)
+    try:
+        import subprocess
+        import platform
+        if platform.system() == "Windows":
+            subprocess.run(["explorer", path])
+        elif platform.system() == "Darwin":
+            subprocess.run(["open", path])
+        else:
+            subprocess.run(["xdg-open", path])
+        return {"status": "ok"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
 
 @app.get("/api/version")

@@ -6,7 +6,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import threading
-import requests as _requests
 
 from watermark_app.hasher import calcular_hashes
 

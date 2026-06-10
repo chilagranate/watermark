@@ -42,8 +42,14 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
                 import videoseal
                 cwd = os.getcwd()
                 if getattr(sys, 'frozen', False):
+                    import tempfile, shutil
                     meipass = sys._MEIPASS
-                    os.chdir(meipass)
+                    tmpdir = tempfile.mkdtemp(prefix='wmcfg_')
+                    for rel in ('configs', 'videoseal/cards'):
+                        src = os.path.join(meipass, rel)
+                        if os.path.exists(src):
+                            shutil.copytree(src, os.path.join(tmpdir, rel), dirs_exist_ok=True)
+                    os.chdir(tmpdir)
                 else:
                     pkg_dir = os.path.dirname(videoseal.__file__)
                     site_packages = os.path.dirname(pkg_dir)

@@ -45,10 +45,17 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
                     import tempfile, shutil
                     meipass = sys._MEIPASS
                     tmpdir = tempfile.mkdtemp(prefix='wmcfg_')
-                    for rel in ('configs', 'videoseal/cards'):
-                        src = os.path.join(meipass, rel)
-                        if os.path.exists(src):
-                            shutil.copytree(src, os.path.join(tmpdir, rel), dirs_exist_ok=True)
+                    src_atten = os.path.join(meipass, 'configs', 'attenuation.yaml')
+                    if os.path.exists(src_atten):
+                        dst_atten = os.path.join(tmpdir, 'configs', 'attenuation.yaml')
+                        os.makedirs(os.path.dirname(dst_atten), exist_ok=True)
+                        with open(src_atten, 'rb') as fin:
+                            with open(dst_atten, 'wb') as fout:
+                                fout.write(fin.read())
+                    src_cards = os.path.join(meipass, 'videoseal', 'cards')
+                    if os.path.exists(src_cards):
+                        shutil.copytree(src_cards, os.path.join(tmpdir, 'videoseal', 'cards'),
+                                        dirs_exist_ok=True, copy_function=shutil.copy)
                     os.chdir(tmpdir)
                 else:
                     pkg_dir = os.path.dirname(videoseal.__file__)

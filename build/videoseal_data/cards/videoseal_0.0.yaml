@@ -7,7 +7,6 @@ args:
   finetune_detector_start: 251
   embedder_config: configs/embedder.yaml
   extractor_config: configs/extractor.yaml
-  attenuation_config: configs/attenuation.yaml
   embedder_model: unet_small2
   extractor_model: sam_small
   augmentation_config: configs/augs.yaml
@@ -16,7 +15,7 @@ args:
   img_size: 256
   img_size_extractor: 256
   img_size_val: 256
-  attenuation: None
+  attenuation: ""
   blending_method: additive
   scaling_w: 1.0
   scaling_w_schedule: null

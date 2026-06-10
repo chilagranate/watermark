@@ -42,21 +42,15 @@ def _cargar_modelo(model_name: str = "videoseal", scaling_w: float = 0.3):
                 import videoseal
                 cwd = os.getcwd()
                 if getattr(sys, 'frozen', False):
-                    import tempfile, shutil
+                    import shutil
                     meipass = sys._MEIPASS
-                    tmpdir = tempfile.mkdtemp(prefix='wmcfg_')
-                    src_atten = os.path.join(meipass, 'configs', 'attenuation.yaml')
-                    if os.path.exists(src_atten):
-                        dst_atten = os.path.join(tmpdir, 'configs', 'attenuation.yaml')
-                        os.makedirs(os.path.dirname(dst_atten), exist_ok=True)
-                        with open(src_atten, 'rb') as fin:
-                            with open(dst_atten, 'wb') as fout:
-                                fout.write(fin.read())
+                    cache_dir = os.path.join(os.path.expanduser('~'), '.cache', 'watermark')
+                    os.makedirs(cache_dir, exist_ok=True)
                     src_cards = os.path.join(meipass, 'videoseal', 'cards')
-                    if os.path.exists(src_cards):
-                        shutil.copytree(src_cards, os.path.join(tmpdir, 'videoseal', 'cards'),
-                                        dirs_exist_ok=True, copy_function=shutil.copy)
-                    os.chdir(tmpdir)
+                    dst_cards = os.path.join(cache_dir, 'videoseal', 'cards')
+                    if os.path.exists(src_cards) and not os.path.exists(dst_cards):
+                        shutil.copytree(src_cards, dst_cards)
+                    os.chdir(cache_dir)
                 else:
                     pkg_dir = os.path.dirname(videoseal.__file__)
                     site_packages = os.path.dirname(pkg_dir)

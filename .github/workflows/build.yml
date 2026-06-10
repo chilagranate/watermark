@@ -63,7 +63,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools
+          pip install requests urllib3 certifi charset-normalizer idna
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install PyWavelets av calflops omegaconf imageio imageio-ffmpeg
           pip install videoseal fastapi uvicorn[standard] python-multipart python-dotenv httpx qrcode[pil] Pillow imagehash opencv-python
           pip install pywebview
           pip install pyinstaller

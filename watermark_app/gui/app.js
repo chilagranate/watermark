@@ -15,10 +15,15 @@ let lastOutputDir = '';
     const r = await fetch('/api/check-update');
     const data = await r.json();
     if (data.update_available) {
+      if (data.latest === data.current) return;
       const banner = document.getElementById('update-banner');
       document.getElementById('update-text').textContent =
-        `v${data.latest} disponible (tenés v${data.current})`;
+        `Nueva actualización v${data.latest} disponible`;
       document.getElementById('update-link').href = data.url;
+      document.getElementById('update-link').onclick = (e) => {
+        e.preventDefault();
+        window.location.href = data.url;
+      };
       banner.hidden = false;
       document.getElementById('update-dismiss').onclick = () => {
         banner.hidden = true;

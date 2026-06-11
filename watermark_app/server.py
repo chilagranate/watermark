@@ -491,6 +491,7 @@ async def shutdown():
 @app.get("/api/check-update")
 async def check_update():
     try:
+        from packaging.version import parse as _parse_version
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get(
                 "https://api.github.com/repos/chilagranate/watermark/releases/latest",
@@ -498,8 +499,8 @@ async def check_update():
             )
             if r.status_code == 200:
                 data = r.json()
-                latest = data.get("tag_name", "").lstrip("v")
-                if latest and latest != __version__:
+                latest = data.get("tag_name", "").strip().lstrip("v")
+                if latest and _parse_version(latest) > _parse_version(__version__):
                     return {
                         "update_available": True,
                         "current": __version__,
